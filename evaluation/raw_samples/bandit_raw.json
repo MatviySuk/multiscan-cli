@@ -1,0 +1,19 @@
+{
+  "errors": [],
+  "generated_at": "2026-05-28T10:14:03Z",
+  "metrics": {
+    "_totals": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "loc": 0,
+      "nosec": 0,
+      "skipped_tests": 0
+    }
+  },
+  "results": [],
+  "_comment": "Bandit is a Python-specific static analyzer. OWASP Juice Shop is a Node.js/TypeScript application. No Python source files were found in the target directory, so Bandit produced no findings. This is expected for a JavaScript target."
+}

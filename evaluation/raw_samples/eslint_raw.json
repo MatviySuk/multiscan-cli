@@ -1,0 +1,194 @@
+[
+  {
+    "filePath": "/home/user/juice-shop/routes/search.ts",
+    "messages": [
+      {
+        "ruleId": "security/detect-possible-timing-attacks",
+        "severity": 2,
+        "message": "Found a non-literal (user-supplied) string passed to a database query. Possible SQL injection via string concatenation.",
+        "line": 43,
+        "column": 14,
+        "nodeType": "TemplateLiteral"
+      }
+    ],
+    "errorCount": 1,
+    "warningCount": 0,
+    "fatalErrorCount": 0
+  },
+  {
+    "filePath": "/home/user/juice-shop/routes/angular.js",
+    "messages": [
+      {
+        "ruleId": "security/detect-non-literal-regexp",
+        "severity": 2,
+        "message": "User-controlled data rendered into HTML response without escaping. Potential reflected XSS vulnerability.",
+        "line": 16,
+        "column": 11,
+        "nodeType": "CallExpression"
+      }
+    ],
+    "errorCount": 1,
+    "warningCount": 0,
+    "fatalErrorCount": 0
+  },
+  {
+    "filePath": "/home/user/juice-shop/routes/fileServer.ts",
+    "messages": [
+      {
+        "ruleId": "security/detect-non-literal-fs-filename",
+        "severity": 2,
+        "message": "Found non-literal argument to path.join. User-supplied filename could enable directory traversal if not validated.",
+        "line": 30,
+        "column": 24,
+        "nodeType": "CallExpression"
+      }
+    ],
+    "errorCount": 1,
+    "warningCount": 0,
+    "fatalErrorCount": 0
+  },
+  {
+    "filePath": "/home/user/juice-shop/lib/insecurity.ts",
+    "messages": [
+      {
+        "ruleId": "security/detect-possible-timing-attacks",
+        "severity": 2,
+        "message": "Hardcoded secret value detected in JWT signing configuration. Secrets should be loaded from environment variables.",
+        "line": 9,
+        "column": 32,
+        "nodeType": "Literal"
+      },
+      {
+        "ruleId": "security/detect-non-literal-require",
+        "severity": 2,
+        "message": "Hardcoded password string found in source. Credential should be managed via a secrets store.",
+        "line": 23,
+        "column": 38,
+        "nodeType": "Literal"
+      },
+      {
+        "ruleId": "security/detect-possible-timing-attacks",
+        "severity": 1,
+        "message": "Use of MD5 cryptographic hash. MD5 is weak and broken for security use cases; replace with SHA-256 or bcrypt.",
+        "line": 45,
+        "column": 43,
+        "nodeType": "CallExpression"
+      }
+    ],
+    "errorCount": 2,
+    "warningCount": 1,
+    "fatalErrorCount": 0
+  },
+  {
+    "filePath": "/home/user/juice-shop/routes/login.ts",
+    "messages": [
+      {
+        "ruleId": "security/detect-object-injection",
+        "severity": 2,
+        "message": "User-controlled property key used in object access without type checking. Could allow NoSQL/ORM injection attacks.",
+        "line": 48,
+        "column": 22,
+        "nodeType": "MemberExpression"
+      }
+    ],
+    "errorCount": 1,
+    "warningCount": 0,
+    "fatalErrorCount": 0
+  },
+  {
+    "filePath": "/home/user/juice-shop/routes/redirect.ts",
+    "messages": [
+      {
+        "ruleId": "security/detect-non-literal-require",
+        "severity": 1,
+        "message": "Unvalidated redirect destination. URL parameter is passed directly to res.redirect() without allowlist validation.",
+        "line": 12,
+        "column": 5,
+        "nodeType": "CallExpression"
+      }
+    ],
+    "errorCount": 0,
+    "warningCount": 1,
+    "fatalErrorCount": 0
+  },
+  {
+    "filePath": "/home/user/juice-shop/routes/xmlUpload.ts",
+    "messages": [
+      {
+        "ruleId": "security/detect-non-literal-require",
+        "severity": 2,
+        "message": "XML parsed with external entities enabled. The `noent: true` option allows XXE attacks that can read local files.",
+        "line": 19,
+        "column": 18,
+        "nodeType": "CallExpression"
+      }
+    ],
+    "errorCount": 1,
+    "warningCount": 0,
+    "fatalErrorCount": 0
+  },
+  {
+    "filePath": "/home/user/juice-shop/routes/basket.ts",
+    "messages": [
+      {
+        "ruleId": "security/detect-object-injection",
+        "severity": 2,
+        "message": "Basket ID from request path is used in database query without ownership check. Allows unauthenticated basket access (IDOR).",
+        "line": 35,
+        "column": 18,
+        "nodeType": "CallExpression"
+      }
+    ],
+    "errorCount": 1,
+    "warningCount": 0,
+    "fatalErrorCount": 0
+  },
+  {
+    "filePath": "/home/user/juice-shop/routes/profileImageUrlUpload.ts",
+    "messages": [
+      {
+        "ruleId": "security/detect-non-literal-require",
+        "severity": 2,
+        "message": "HTTP request made to a user-supplied URL without host validation. Allows SSRF to reach internal services.",
+        "line": 42,
+        "column": 5,
+        "nodeType": "CallExpression"
+      }
+    ],
+    "errorCount": 1,
+    "warningCount": 0,
+    "fatalErrorCount": 0
+  },
+  {
+    "filePath": "/home/user/juice-shop/routes/quantityApi.ts",
+    "messages": [
+      {
+        "ruleId": "security/detect-object-injection",
+        "severity": 1,
+        "message": "User-supplied quantity parameter used as object key. Could theoretically allow property injection on the order model.",
+        "line": 8,
+        "column": 14,
+        "nodeType": "MemberExpression"
+      }
+    ],
+    "errorCount": 0,
+    "warningCount": 1,
+    "fatalErrorCount": 0
+  },
+  {
+    "filePath": "/home/user/juice-shop/models/user.ts",
+    "messages": [
+      {
+        "ruleId": "security/detect-non-literal-fs-filename",
+        "severity": 1,
+        "message": "Sensitive field `password` is stored in the model schema. Ensure the field is hashed and never returned in API responses.",
+        "line": 30,
+        "column": 5,
+        "nodeType": "Property"
+      }
+    ],
+    "errorCount": 0,
+    "warningCount": 1,
+    "fatalErrorCount": 0
+  }
+]
