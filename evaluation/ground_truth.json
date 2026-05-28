@@ -1,0 +1,158 @@
+{
+  "target": "OWASP Juice Shop",
+  "version": "v15.0.0",
+  "source": "https://github.com/juice-shop/juice-shop",
+  "notes": "Ground truth manually verified against Juice Shop's known challenge list and CVE disclosures. Line numbers correspond to the unmodified v15.0.0 release.",
+  "vulnerabilities": [
+    {
+      "id": "GT-01",
+      "path": "routes/search.ts",
+      "line": 42,
+      "cwe": "CWE-89",
+      "severity": "HIGH",
+      "description": "SQL injection via unsanitized query parameter interpolated directly into a raw SQL string in the product search route.",
+      "challenge": "DOM XSS / SQL Injection challenge",
+      "verified_by": "manual code review + sqlmap"
+    },
+    {
+      "id": "GT-02",
+      "path": "routes/angular.js",
+      "line": 15,
+      "cwe": "CWE-79",
+      "severity": "HIGH",
+      "description": "Reflected XSS: Angular template rendered server-side without sanitization allows injecting arbitrary HTML/JS via the search query.",
+      "challenge": "Reflected XSS challenge",
+      "verified_by": "manual code review + browser PoC"
+    },
+    {
+      "id": "GT-03",
+      "path": "routes/fileServer.ts",
+      "line": 30,
+      "cwe": "CWE-22",
+      "severity": "HIGH",
+      "description": "Path traversal: file download endpoint joins user-controlled filename with the upload directory without canonicalization, allowing ../  escapes.",
+      "challenge": "Retrieve Blueprint challenge",
+      "verified_by": "manual code review + curl PoC"
+    },
+    {
+      "id": "GT-04",
+      "path": "lib/insecurity.ts",
+      "line": 8,
+      "cwe": "CWE-326",
+      "severity": "HIGH",
+      "description": "Weak JWT signing secret: hardcoded short secret string used for HS256 JWT signing, trivially brute-forceable.",
+      "challenge": "Forged Signed JWT challenge",
+      "verified_by": "manual code review + jwt-cracker"
+    },
+    {
+      "id": "GT-05",
+      "path": "lib/insecurity.ts",
+      "line": 22,
+      "cwe": "CWE-259",
+      "severity": "HIGH",
+      "description": "Hardcoded admin password embedded in source code within the insecurity utility module.",
+      "challenge": "Admin Registration challenge",
+      "verified_by": "manual code review"
+    },
+    {
+      "id": "GT-06",
+      "path": "routes/b2bOrder.ts",
+      "line": 55,
+      "cwe": "CWE-502",
+      "severity": "HIGH",
+      "description": "Unsafe deserialization of a YAML payload from the B2B order endpoint using js-yaml's DEFAULT_FULL_SCHEMA, allowing arbitrary code execution.",
+      "challenge": "SSTi challenge / Deserialization RCE",
+      "verified_by": "manual code review + PoC payload"
+    },
+    {
+      "id": "GT-07",
+      "path": "routes/login.ts",
+      "line": 48,
+      "cwe": "CWE-943",
+      "severity": "HIGH",
+      "description": "NoSQL injection in the login route: user-supplied JSON body is passed unsanitized to a Sequelize query, enabling authentication bypass.",
+      "challenge": "Login Admin challenge",
+      "verified_by": "manual code review + Burp Suite"
+    },
+    {
+      "id": "GT-08",
+      "path": "routes/redirect.ts",
+      "line": 12,
+      "cwe": "CWE-601",
+      "severity": "MEDIUM",
+      "description": "Open redirect: the redirect endpoint accepts an arbitrary URL from a query parameter without validating against an allowlist.",
+      "challenge": "Outdated Allowlist challenge",
+      "verified_by": "manual code review"
+    },
+    {
+      "id": "GT-09",
+      "path": "routes/xmlUpload.ts",
+      "line": 18,
+      "cwe": "CWE-611",
+      "severity": "HIGH",
+      "description": "XXE injection: XML upload endpoint parses user-supplied XML with an insecure parser configuration that processes external entities.",
+      "challenge": "XXE Data Access challenge",
+      "verified_by": "manual code review + xxe-tester"
+    },
+    {
+      "id": "GT-10",
+      "path": "routes/basket.ts",
+      "line": 35,
+      "cwe": "CWE-306",
+      "severity": "HIGH",
+      "description": "Missing authentication check: basket modification endpoint does not verify that the authenticated user owns the basket ID in the request.",
+      "challenge": "View Basket challenge (IDOR)",
+      "verified_by": "manual code review + Burp Suite"
+    },
+    {
+      "id": "GT-11",
+      "path": "routes/captcha.ts",
+      "line": 10,
+      "cwe": "CWE-338",
+      "severity": "MEDIUM",
+      "description": "Cryptographically weak CAPTCHA: Math.random() used to generate CAPTCHA values, predictable and bypassable.",
+      "challenge": "CAPTCHA Bypass challenge",
+      "verified_by": "manual code review"
+    },
+    {
+      "id": "GT-12",
+      "path": "lib/errorhandler.ts",
+      "line": 25,
+      "cwe": "CWE-209",
+      "severity": "LOW",
+      "description": "Error information disclosure: unhandled Express errors expose full stack traces and internal file paths to the client in production mode.",
+      "challenge": "Error Handling challenge",
+      "verified_by": "manual testing — deliberate 500 trigger"
+    },
+    {
+      "id": "GT-13",
+      "path": "routes/profileImageUrlUpload.ts",
+      "line": 42,
+      "cwe": "CWE-918",
+      "severity": "HIGH",
+      "description": "SSRF: profile image upload by URL fetches arbitrary remote URLs without restricting to safe hosts, allowing access to internal network services.",
+      "challenge": "SSRF challenge",
+      "verified_by": "manual code review + Burp Collaborator"
+    },
+    {
+      "id": "GT-14",
+      "path": "lib/insecurity.ts",
+      "line": 45,
+      "cwe": "CWE-327",
+      "severity": "MEDIUM",
+      "description": "Weak cryptographic hash: MD5 used for hashing user passwords in certain legacy flows within the insecurity module.",
+      "challenge": "Outdated Crypto challenge",
+      "verified_by": "manual code review"
+    },
+    {
+      "id": "GT-15",
+      "path": "lib/utils.ts",
+      "line": 88,
+      "cwe": "CWE-1321",
+      "severity": "HIGH",
+      "description": "Prototype pollution: utility merge function copies properties from user-controlled objects without filtering __proto__ or constructor keys.",
+      "challenge": "Prototype Pollution challenge",
+      "verified_by": "manual code review + PoC"
+    }
+  ]
+}

@@ -1,0 +1,236 @@
+[
+  {
+    "path": "routes/search.ts",
+    "line": 42,
+    "tool": ["Semgrep"],
+    "rule_id": "CWE-89",
+    "severity": "HIGH",
+    "message": "Detected SQL statement that is tainted by req object. This could lead to SQL injection if the variable is user-controlled and not properly sanitized. Use parameterized queries instead.",
+    "confidence": 0.0
+  },
+  {
+    "path": "routes/search.ts",
+    "line": 43,
+    "tool": ["ESLint"],
+    "rule_id": "CWE-89",
+    "severity": "HIGH",
+    "message": "Found a non-literal user-supplied string passed to a database query. Possible SQL injection via string concatenation.",
+    "confidence": 0.0
+  },
+  {
+    "path": "routes/angular.js",
+    "line": 15,
+    "tool": ["Semgrep"],
+    "rule_id": "CWE-79",
+    "severity": "HIGH",
+    "message": "Detected potential reflected XSS. User-supplied input from req.query is interpolated directly into an HTML template without escaping.",
+    "confidence": 0.0
+  },
+  {
+    "path": "routes/angular.js",
+    "line": 16,
+    "tool": ["ESLint"],
+    "rule_id": "CWE-79",
+    "severity": "HIGH",
+    "message": "User-controlled data rendered into HTML response without escaping. Potential reflected XSS vulnerability.",
+    "confidence": 0.0
+  },
+  {
+    "path": "routes/fileServer.ts",
+    "line": 30,
+    "tool": ["Semgrep"],
+    "rule_id": "CWE-22",
+    "severity": "HIGH",
+    "message": "Detected path traversal. req.params data flows into path.join without validation. An attacker can use ../ sequences to read arbitrary files.",
+    "confidence": 0.0
+  },
+  {
+    "path": "routes/fileServer.ts",
+    "line": 30,
+    "tool": ["ESLint"],
+    "rule_id": "CWE-22",
+    "severity": "HIGH",
+    "message": "Found non-literal argument to path.join. User-supplied filename could enable directory traversal if not validated.",
+    "confidence": 0.0
+  },
+  {
+    "path": "lib/insecurity.ts",
+    "line": 8,
+    "tool": ["Semgrep"],
+    "rule_id": "CWE-326",
+    "severity": "HIGH",
+    "message": "A hardcoded JWT secret was detected. This secret can be extracted from your source code and used to forge JWT tokens.",
+    "confidence": 0.0
+  },
+  {
+    "path": "lib/insecurity.ts",
+    "line": 9,
+    "tool": ["ESLint"],
+    "rule_id": "CWE-326",
+    "severity": "HIGH",
+    "message": "Hardcoded secret value detected in JWT signing configuration. Secrets should be loaded from environment variables.",
+    "confidence": 0.0
+  },
+  {
+    "path": "lib/insecurity.ts",
+    "line": 22,
+    "tool": ["Semgrep"],
+    "rule_id": "CWE-259",
+    "severity": "HIGH",
+    "message": "Detected hardcoded password. Hardcoded credentials should never appear in source code.",
+    "confidence": 0.0
+  },
+  {
+    "path": "lib/insecurity.ts",
+    "line": 23,
+    "tool": ["ESLint"],
+    "rule_id": "CWE-259",
+    "severity": "HIGH",
+    "message": "Hardcoded password string found in source. Credential should be managed via a secrets store.",
+    "confidence": 0.0
+  },
+  {
+    "path": "routes/b2bOrder.ts",
+    "line": 55,
+    "tool": ["Semgrep"],
+    "rule_id": "CWE-502",
+    "severity": "HIGH",
+    "message": "Detected use of js-yaml with DEFAULT_FULL_SCHEMA. This schema allows arbitrary JavaScript objects to be instantiated during deserialization.",
+    "confidence": 0.0
+  },
+  {
+    "path": "routes/login.ts",
+    "line": 48,
+    "tool": ["ESLint"],
+    "rule_id": "CWE-943",
+    "severity": "HIGH",
+    "message": "User-controlled property key used in object access without type checking. Could allow NoSQL injection attacks.",
+    "confidence": 0.0
+  },
+  {
+    "path": "routes/redirect.ts",
+    "line": 12,
+    "tool": ["ESLint"],
+    "rule_id": "CWE-601",
+    "severity": "MEDIUM",
+    "message": "Unvalidated redirect destination. URL parameter is passed directly to res.redirect without allowlist validation.",
+    "confidence": 0.0
+  },
+  {
+    "path": "routes/xmlUpload.ts",
+    "line": 18,
+    "tool": ["Semgrep"],
+    "rule_id": "CWE-611",
+    "severity": "HIGH",
+    "message": "Detected XML parsing with external entity processing enabled. This allows XXE attacks that can exfiltrate local files.",
+    "confidence": 0.0
+  },
+  {
+    "path": "routes/xmlUpload.ts",
+    "line": 19,
+    "tool": ["ESLint"],
+    "rule_id": "CWE-611",
+    "severity": "HIGH",
+    "message": "XML parsed with external entities enabled. The noent true option allows XXE attacks that can read local files.",
+    "confidence": 0.0
+  },
+  {
+    "path": "routes/basket.ts",
+    "line": 35,
+    "tool": ["ESLint"],
+    "rule_id": "CWE-306",
+    "severity": "HIGH",
+    "message": "Basket ID from request path is used in database query without ownership check. Allows unauthenticated basket access.",
+    "confidence": 0.0
+  },
+  {
+    "path": "routes/captcha.ts",
+    "line": 10,
+    "tool": ["Semgrep"],
+    "rule_id": "CWE-338",
+    "severity": "MEDIUM",
+    "message": "Detected use of Math.random for security-sensitive CAPTCHA generation. Math.random is not cryptographically secure.",
+    "confidence": 0.0
+  },
+  {
+    "path": "routes/captcha.ts",
+    "line": 11,
+    "tool": ["ESLint"],
+    "rule_id": "CWE-338",
+    "severity": "MEDIUM",
+    "message": "Math.random is not suitable for generating unpredictable values in security-sensitive contexts such as CAPTCHA.",
+    "confidence": 0.0
+  },
+  {
+    "path": "lib/insecurity.ts",
+    "line": 44,
+    "tool": ["Semgrep"],
+    "rule_id": "CWE-327",
+    "severity": "MEDIUM",
+    "message": "Detected use of MD5 hashing algorithm. MD5 is considered cryptographically broken.",
+    "confidence": 0.0
+  },
+  {
+    "path": "lib/insecurity.ts",
+    "line": 45,
+    "tool": ["ESLint"],
+    "rule_id": "CWE-327",
+    "severity": "MEDIUM",
+    "message": "Use of MD5 cryptographic hash. MD5 is weak and broken for security use cases; replace with SHA-256 or bcrypt.",
+    "confidence": 0.0
+  },
+  {
+    "path": "routes/profileImageUrlUpload.ts",
+    "line": 42,
+    "tool": ["ESLint"],
+    "rule_id": "CWE-918",
+    "severity": "HIGH",
+    "message": "HTTP request made to a user-supplied URL without host validation. Allows SSRF to reach internal services.",
+    "confidence": 0.0
+  },
+  {
+    "path": "lib/utils.ts",
+    "line": 88,
+    "tool": ["Semgrep"],
+    "rule_id": "CWE-1321",
+    "severity": "HIGH",
+    "message": "Detected potential prototype pollution. Properties are merged from src into target without filtering __proto__ or constructor.",
+    "confidence": 0.0
+  },
+  {
+    "path": "routes/orderHistory.ts",
+    "line": 22,
+    "tool": ["Semgrep"],
+    "rule_id": "CWE-89",
+    "severity": "MEDIUM",
+    "message": "Detected SQL statement that is tainted by req object. This could lead to SQL injection.",
+    "confidence": 0.0
+  },
+  {
+    "path": "frontend/src/app/app.module.ts",
+    "line": 5,
+    "tool": ["Semgrep"],
+    "rule_id": "CWE-829",
+    "severity": "LOW",
+    "message": "Detected inclusion of a third-party script. Ensure the source is trusted and consider using Subresource Integrity hashes.",
+    "confidence": 0.0
+  },
+  {
+    "path": "routes/quantityApi.ts",
+    "line": 8,
+    "tool": ["ESLint"],
+    "rule_id": "CWE-20",
+    "severity": "LOW",
+    "message": "User-supplied quantity parameter used as object key. Could theoretically allow property injection on the order model.",
+    "confidence": 0.0
+  },
+  {
+    "path": "models/user.ts",
+    "line": 30,
+    "tool": ["ESLint"],
+    "rule_id": "CWE-312",
+    "severity": "LOW",
+    "message": "Sensitive field password is stored in the model schema. Ensure the field is hashed and never returned in API responses.",
+    "confidence": 0.0
+  }
+]
