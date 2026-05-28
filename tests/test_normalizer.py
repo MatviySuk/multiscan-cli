@@ -510,103 +510,120 @@ class TestMakePathRelative:
 # ===========================================================================
 
 class TestNormalizeAll:
+    """Integration tests for normalize_all(raw_results).
 
-    def test_all_three_tools_combined(self):
-        bandit_raw  = {"results": [bandit_result()]}
-        semgrep_raw = {"results": [semgrep_result()]}
-        eslint_raw  = [eslint_file_entry()]
-        findings = normalize_all(
-            bandit_raw=bandit_raw,
-            semgrep_raw=semgrep_raw,
-            eslint_raw=eslint_raw,
-        )
-        assert len(findings) == 3
+    Uses tmp_path to write real JSON files so the file-based interface
+    matches what the orchestrator (Part 1) actually passes in.
+    """
 
-    def test_tools_list_per_finding_is_correct(self):
-        bandit_raw  = {"results": [bandit_result()]}
-        semgrep_raw = {"results": [semgrep_result()]}
-        eslint_raw  = [eslint_file_entry()]
-        findings = normalize_all(
-            bandit_raw=bandit_raw,
-            semgrep_raw=semgrep_raw,
-            eslint_raw=eslint_raw,
+    # --- helpers ---
+
+    def _write(self, tmp_path, name, data):
+        import json
+        p = tmp_path / name
+        p.write_text(json.dumps(data))
+        return str(p)
+
+    def _raw_results(self, tmp_path, *, bandit=None, semgrep=None, eslint=None):
+        raw = {}
+        if bandit is not None:
+            raw["Bandit"]  = {"stdout_file": self._write(tmp_path, "bandit.json",  bandit),  "exit_code": 0}
+        if semgrep is not None:
+            raw["Semgrep"] = {"stdout_file": self._write(tmp_path, "semgrep.json", semgrep), "exit_code": 0}
+        if eslint is not None:
+            raw["ESLint"]  = {"stdout_file": self._write(tmp_path, "eslint.json",  eslint),  "exit_code": 0}
+        return raw
+
+    # --- tests ---
+
+    def test_all_three_tools_combined(self, tmp_path):
+        raw = self._raw_results(tmp_path,
+            bandit={"results": [bandit_result()]},
+            semgrep={"results": [semgrep_result()]},
+            eslint=[eslint_file_entry()],
         )
-        tools = [f["tool"] for f in findings]
+        assert len(normalize_all(raw)) == 3
+
+    def test_tools_list_per_finding_is_correct(self, tmp_path):
+        raw = self._raw_results(tmp_path,
+            bandit={"results": [bandit_result()]},
+            semgrep={"results": [semgrep_result()]},
+            eslint=[eslint_file_entry()],
+        )
+        tools = [f["tool"] for f in normalize_all(raw)]
         assert ["Bandit"]  in tools
         assert ["Semgrep"] in tools
         assert ["ESLint"]  in tools
 
-    def test_only_bandit(self):
-        findings = normalize_all(bandit_raw={"results": [bandit_result()]})
+    def test_only_bandit(self, tmp_path):
+        raw = self._raw_results(tmp_path, bandit={"results": [bandit_result()]})
+        findings = normalize_all(raw)
         assert len(findings) == 1
         assert findings[0]["tool"] == ["Bandit"]
 
-    def test_only_semgrep(self):
-        findings = normalize_all(semgrep_raw={"results": [semgrep_result()]})
+    def test_only_semgrep(self, tmp_path):
+        raw = self._raw_results(tmp_path, semgrep={"results": [semgrep_result()]})
+        findings = normalize_all(raw)
         assert len(findings) == 1
         assert findings[0]["tool"] == ["Semgrep"]
 
-    def test_only_eslint(self):
-        findings = normalize_all(eslint_raw=[eslint_file_entry()])
+    def test_only_eslint(self, tmp_path):
+        raw = self._raw_results(tmp_path, eslint=[eslint_file_entry()])
+        findings = normalize_all(raw)
         assert len(findings) == 1
         assert findings[0]["tool"] == ["ESLint"]
 
-    def test_all_none_returns_empty_list(self):
-        findings = normalize_all()
-        assert findings == []
+    def test_empty_dict_returns_empty_list(self):
+        assert normalize_all({}) == []
 
-    def test_all_empty_returns_empty_list(self):
-        findings = normalize_all(
-            bandit_raw={"results": []},
-            semgrep_raw={"results": []},
-            eslint_raw=[],
+    def test_all_empty_results_returns_empty_list(self, tmp_path):
+        raw = self._raw_results(tmp_path,
+            bandit={"results": []},
+            semgrep={"results": []},
+            eslint=[],
         )
-        assert findings == []
+        assert normalize_all(raw) == []
 
-    def test_unified_schema_keys_present(self):
+    def test_unified_schema_keys_present(self, tmp_path):
         """Every finding must have all required unified schema keys."""
         required_keys = {"path", "line", "tool", "rule_id", "severity", "message", "confidence"}
-        findings = normalize_all(
-            bandit_raw={"results": [bandit_result()]},
-            semgrep_raw={"results": [semgrep_result()]},
-            eslint_raw=[eslint_file_entry()],
+        raw = self._raw_results(tmp_path,
+            bandit={"results": [bandit_result()]},
+            semgrep={"results": [semgrep_result()]},
+            eslint=[eslint_file_entry()],
         )
-        for f in findings:
-            assert required_keys.issubset(f.keys()), (
-                f"Finding missing keys: {required_keys - f.keys()}"
-            )
+        for f in normalize_all(raw):
+            assert required_keys.issubset(f.keys()), f"Finding missing keys: {required_keys - f.keys()}"
 
-    def test_severity_values_are_valid(self):
+    def test_severity_values_are_valid(self, tmp_path):
         """Severity must always be HIGH, MEDIUM, or LOW — never anything else."""
         valid = {"HIGH", "MEDIUM", "LOW"}
-        findings = normalize_all(
-            bandit_raw={"results": [
+        raw = self._raw_results(tmp_path,
+            bandit={"results": [
                 bandit_result(issue_severity="HIGH"),
                 bandit_result(issue_severity="MEDIUM"),
                 bandit_result(issue_severity="LOW"),
             ]},
-            semgrep_raw={"results": [
-                semgrep_result(),
-            ]},
+            semgrep={"results": [semgrep_result()]},
         )
-        for f in findings:
+        for f in normalize_all(raw):
             assert f["severity"] in valid, f"Invalid severity: {f['severity']}"
 
-    def test_confidence_is_float_between_0_and_1(self):
-        findings = normalize_all(
-            bandit_raw={"results": [bandit_result()]},
-            semgrep_raw={"results": [semgrep_result()]},
-            eslint_raw=[eslint_file_entry()],
+    def test_confidence_is_float_between_0_and_1(self, tmp_path):
+        raw = self._raw_results(tmp_path,
+            bandit={"results": [bandit_result()]},
+            semgrep={"results": [semgrep_result()]},
+            eslint=[eslint_file_entry()],
         )
-        for f in findings:
+        for f in normalize_all(raw):
             assert isinstance(f["confidence"], float)
             assert 0.0 <= f["confidence"] <= 1.0
 
-    def test_tool_field_is_always_a_list(self):
-        findings = normalize_all(
-            bandit_raw={"results": [bandit_result()]},
-            semgrep_raw={"results": [semgrep_result()]},
-            eslint_raw=[eslint_file_entry()],
+    def test_tool_field_is_always_a_list(self, tmp_path):
+        raw = self._raw_results(tmp_path,
+            bandit={"results": [bandit_result()]},
+            semgrep={"results": [semgrep_result()]},
+            eslint=[eslint_file_entry()],
         )
-        for f in findings:
+        for f in normalize_all(raw):
             assert isinstance(f["tool"], list)

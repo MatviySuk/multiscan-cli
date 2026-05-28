@@ -405,40 +405,44 @@ def parse_eslint(raw_json: list, base_dir: str = "") -> list[dict]:
 # Master Normalizer
 # ---------------------------------------------------------------------------
 
-def normalize_all(
-    bandit_raw:  dict | None = None,
-    semgrep_raw: dict | None = None,
-    eslint_raw:  list | None = None,
-    eslint_base_dir: str = "",
-) -> list[dict]:
+def normalize_all(raw_results: dict) -> list[dict]:
     """
     Run all available parsers and return a single flat list of findings.
 
     Args:
-        bandit_raw:      Parsed JSON from Bandit (or None to skip).
-        semgrep_raw:     Parsed JSON from Semgrep (or None to skip).
-        eslint_raw:      Parsed JSON list from ESLint (or None to skip).
-        eslint_base_dir: Optional base directory for relative ESLint paths.
+        raw_results: Dict keyed by tool name, e.g.:
+            {
+                "Bandit":  {"stdout_file": "output/raw/bandit_raw.json",  "exit_code": 0, ...},
+                "Semgrep": {"stdout_file": "output/raw/semgrep_raw.json", "exit_code": 0, ...},
+                "ESLint":  {"stdout_file": "output/raw/eslint_raw.json",  "exit_code": 0, ...},
+            }
 
     Returns:
         Combined list of normalized findings from all tools.
     """
+    def _load(path: str) -> Any:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+
     all_findings: list[dict] = []
 
-    if bandit_raw is not None:
-        bandit_findings = parse_bandit(bandit_raw)
-        print(f"[Bandit]  {len(bandit_findings)} findings parsed.")
-        all_findings.extend(bandit_findings)
+    if "Bandit" in raw_results:
+        raw = _load(raw_results["Bandit"]["stdout_file"])
+        findings = parse_bandit(raw)
+        print(f"[Bandit]  {len(findings)} findings parsed.")
+        all_findings.extend(findings)
 
-    if semgrep_raw is not None:
-        semgrep_findings = parse_semgrep(semgrep_raw)
-        print(f"[Semgrep] {len(semgrep_findings)} findings parsed.")
-        all_findings.extend(semgrep_findings)
+    if "Semgrep" in raw_results:
+        raw = _load(raw_results["Semgrep"]["stdout_file"])
+        findings = parse_semgrep(raw)
+        print(f"[Semgrep] {len(findings)} findings parsed.")
+        all_findings.extend(findings)
 
-    if eslint_raw is not None:
-        eslint_findings = parse_eslint(eslint_raw, base_dir=eslint_base_dir)
-        print(f"[ESLint]  {len(eslint_findings)} findings parsed.")
-        all_findings.extend(eslint_findings)
+    if "ESLint" in raw_results:
+        raw = _load(raw_results["ESLint"]["stdout_file"])
+        findings = parse_eslint(raw)
+        print(f"[ESLint]  {len(findings)} findings parsed.")
+        all_findings.extend(findings)
 
     print(f"\n✅ Total normalized findings: {len(all_findings)}")
     return all_findings
@@ -554,12 +558,18 @@ if __name__ == "__main__":
         }
     ]
 
-    results = normalize_all(
-        bandit_raw=sample_bandit,
-        semgrep_raw=sample_semgrep,
-        eslint_raw=sample_eslint,
-        eslint_base_dir="/home/user/myapp",
-    )
+    # Write temp files so the smoke test can use the new file-based interface
+    import tempfile, pathlib
+    tmp = pathlib.Path(tempfile.mkdtemp())
+    (tmp / "bandit.json").write_text(json.dumps(sample_bandit))
+    (tmp / "semgrep.json").write_text(json.dumps(sample_semgrep))
+    (tmp / "eslint.json").write_text(json.dumps(sample_eslint))
+
+    results = normalize_all({
+        "Bandit":  {"stdout_file": str(tmp / "bandit.json"),  "exit_code": 0},
+        "Semgrep": {"stdout_file": str(tmp / "semgrep.json"), "exit_code": 0},
+        "ESLint":  {"stdout_file": str(tmp / "eslint.json"),  "exit_code": 0},
+    })
 
     print("\n--- Normalized Findings ---")
     for i, f in enumerate(results, 1):
