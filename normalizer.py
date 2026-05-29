@@ -426,19 +426,19 @@ def normalize_all(raw_results: dict) -> list[dict]:
 
     all_findings: list[dict] = []
 
-    if "Bandit" in raw_results:
+    if "Bandit" in raw_results and "stdout_file" in raw_results["Bandit"]:
         raw = _load(raw_results["Bandit"]["stdout_file"])
         findings = parse_bandit(raw)
         print(f"[Bandit]  {len(findings)} findings parsed.")
         all_findings.extend(findings)
 
-    if "Semgrep" in raw_results:
+    if "Semgrep" in raw_results and "stdout_file" in raw_results["Semgrep"]:
         raw = _load(raw_results["Semgrep"]["stdout_file"])
         findings = parse_semgrep(raw)
         print(f"[Semgrep] {len(findings)} findings parsed.")
         all_findings.extend(findings)
 
-    if "ESLint" in raw_results:
+    if "ESLint" in raw_results and "stdout_file" in raw_results["ESLint"]:
         raw = _load(raw_results["ESLint"]["stdout_file"])
         findings = parse_eslint(raw)
         print(f"[ESLint]  {len(findings)} findings parsed.")

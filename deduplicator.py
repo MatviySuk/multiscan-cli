@@ -69,7 +69,7 @@ def is_duplicate(first_finding, second_finding):
     return matches >= 2
 
 
-def calculate_confidence(finding):
+def calculate_confidence(finding, unique_cwes=1, unique_locations=1):
     """
     Calculate confidence score based on:
     - tool agreement
@@ -85,8 +85,12 @@ def calculate_confidence(finding):
     severity = finding["severity"].upper()
     severity_score = SEVERITY_SCORES.get(severity, 0.3)
 
-    cwe_score = 1.0
-    location_score = 1.0
+    # If multiple tools reported this but they found DIFFERENT CWEs, cwe_score drops
+    # 1.0 if they all agreed on the same CWE, else 0.5 (or less)
+    cwe_score = 1.0 if unique_cwes == 1 else 0.5
+    
+    # If they all reported the exact same location, location_score = 1.0, else 0.5
+    location_score = 1.0 if unique_locations == 1 else 0.5
 
     confidence = (
         0.4 * tool_agreement
@@ -119,6 +123,10 @@ def deduplicate_and_score(normalized_findings):
             continue
 
         current = normalized_findings[i]
+        
+        # Track unique CWEs and Locations for dynamic scoring
+        merged_cwes = {current["rule_id"]}
+        merged_locations = {f"{current['path']}:{current['line']}"}
 
         for finding in range(i + 1, len(normalized_findings)):
             if finding in used:
@@ -128,13 +136,15 @@ def deduplicate_and_score(normalized_findings):
 
             if is_duplicate(current, candidate):
                 merged_tools = list(set(current["tool"] + candidate["tool"]))
+                merged_cwes.add(candidate["rule_id"])
+                merged_locations.add(f"{candidate['path']}:{candidate['line']}")
 
                 current_severity = current["severity"].upper()
                 candidate_severity = candidate["severity"].upper()
 
                 if (
-                    SEVERITY_ORDER[current_severity]
-                    >= SEVERITY_ORDER[candidate_severity]
+                    SEVERITY_ORDER.get(current_severity, 0)
+                    >= SEVERITY_ORDER.get(candidate_severity, 0)
                 ):
                     severity = current_severity
                 else:
@@ -154,7 +164,7 @@ def deduplicate_and_score(normalized_findings):
 
                 used.add(finding)
 
-        current["confidence"] = calculate_confidence(current)
+        current["confidence"] = calculate_confidence(current, len(merged_cwes), len(merged_locations))
 
         processed.append(current)
 
