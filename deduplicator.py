@@ -15,11 +15,18 @@ def location_match(first_finding, second_finding):
 
     If both are true, they may be duplicates.
     """
+    if first_finding["path"] != second_finding["path"]:
+        return False
+        
+    l1 = first_finding.get("line")
+    l2 = second_finding.get("line")
+    
+    if l1 is None and l2 is None:
+        return True # Both file-level
+    if l1 is None or l2 is None:
+        return False # Cannot compare proximity
 
-    return (
-        first_finding["path"] == second_finding["path"]
-        and abs(first_finding["line"] - second_finding["line"]) <= 5
-    )
+    return abs(l1 - l2) <= 5
 
 
 def cwe_match(first_finding, second_finding):
@@ -152,9 +159,17 @@ def deduplicate_and_score(normalized_findings):
 
                 message = max([current["message"], candidate["message"]], key=len)
 
+                # Safely get the minimum line number
+                l1 = current.get("line")
+                l2 = candidate.get("line")
+                if l1 is not None and l2 is not None:
+                    merged_line = min(l1, l2)
+                else:
+                    merged_line = l1 if l1 is not None else l2
+
                 current = {
                     "path": current["path"],
-                    "line": min(current["line"], candidate["line"]),
+                    "line": merged_line,
                     "tool": merged_tools,
                     "rule_id": current["rule_id"],
                     "severity": severity,
