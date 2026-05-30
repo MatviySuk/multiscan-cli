@@ -449,44 +449,6 @@ def normalize_all(raw_results: dict) -> list[dict]:
 
 
 # ---------------------------------------------------------------------------
-# Convenience: load from file paths
-# ---------------------------------------------------------------------------
-
-def normalize_from_files(
-    bandit_path:     str | None = None,
-    semgrep_path:    str | None = None,
-    eslint_path:     str | None = None,
-    eslint_base_dir: str = "",
-) -> list[dict]:
-    """
-    Load raw output files from disk, parse, and normalize.
-
-    Args:
-        bandit_path:     Path to bandit JSON output file.
-        semgrep_path:    Path to semgrep JSON (or SARIF) output file.
-        eslint_path:     Path to eslint JSON output file.
-        eslint_base_dir: Optional base directory for relative ESLint paths.
-
-    Returns:
-        Combined list of normalized findings.
-    """
-    def load_json(path: str) -> Any:
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
-
-    bandit_raw  = load_json(bandit_path)  if bandit_path  else None
-    semgrep_raw = load_json(semgrep_path) if semgrep_path else None
-    eslint_raw  = load_json(eslint_path)  if eslint_path  else None
-
-    return normalize_all(
-        bandit_raw=bandit_raw,
-        semgrep_raw=semgrep_raw,
-        eslint_raw=eslint_raw,
-        eslint_base_dir=eslint_base_dir,
-    )
-
-
-# ---------------------------------------------------------------------------
 # Quick smoke test (run directly: python normalizer.py)
 # ---------------------------------------------------------------------------
 

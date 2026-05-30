@@ -236,7 +236,13 @@ class MultiScanCLI:
             table.add_column("Message")
             table.add_column("Conf", justify="right")
 
-            for f in findings:
+            for f in sorted(
+                findings,
+                key=lambda f: (
+                    -{"HIGH": 2, "MEDIUM": 1, "LOW": 0}.get(f["severity"].upper(), 0),
+                    -f["confidence"],
+                ),
+            ):
                 sev = f["severity"].upper()
                 color = (
                     "red" if sev == "HIGH" else "yellow" if sev == "MEDIUM" else "blue"
@@ -254,10 +260,13 @@ class MultiScanCLI:
         console.print("=" * 60)
         duration = self.stats["end_time"] - self.stats["start_time"]
 
+        # Calculate only successful tools
+        successful_tools = self.stats["tools_attempted"] - self.stats["tools_failed"]
+
         summary = (
             f"Duplicates removed: [green]{self.stats['duplicates_removed']}[/green]  |  "
             f"Total findings: [bold]{len(findings)}[/bold]  |  "
-            f"Tools run: [bold]{len(self.raw_results)}[/bold]"
+            f"Tools run: [bold]{successful_tools}[/bold]"
         )
         console.print(summary)
         console.print(f"[dim]Total scan duration: {duration:.2f}s[/dim]")
