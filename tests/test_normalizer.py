@@ -1,14 +1,4 @@
-"""
-test_normalizer.py — MultiScan CLI | Test Suite for Part 2: Normalizer
-=======================================================================
-Run with:
-    pytest test_normalizer.py -v
-
-Or with coverage:
-    pytest test_normalizer.py -v --tb=short
-
-Each test class maps to one parser or one test category.
-"""
+"""Tests for the Bandit/Semgrep/ESLint parsers in normalizer.py."""
 
 import pytest
 from normalizer import (
@@ -23,10 +13,6 @@ from normalizer import (
     _make_path_relative,
 )
 
-
-# ===========================================================================
-# HELPERS — reusable sample inputs
-# ===========================================================================
 
 def bandit_result(**overrides):
     """Return a minimal valid Bandit result dict, with optional overrides."""
@@ -70,10 +56,6 @@ def eslint_file_entry(filepath="/home/user/myapp/routes/login.js", messages=None
         ]
     return {"filePath": filepath, "messages": messages}
 
-
-# ===========================================================================
-# 1. BANDIT PARSER TESTS
-# ===========================================================================
 
 class TestParseBandit:
 
@@ -189,10 +171,6 @@ class TestParseBandit:
         raw = {"results": [bandit_result(issue_severity="LOW")]}
         assert parse_bandit(raw)[0]["confidence"] == 0.3
 
-
-# ===========================================================================
-# 2. SEMGREP PARSER TESTS
-# ===========================================================================
 
 class TestParseSemgrep:
 
@@ -330,10 +308,6 @@ class TestParseSemgrep:
         assert parse_semgrep({"runs": []}) == []
 
 
-# ===========================================================================
-# 3. ESLINT PARSER TESTS
-# ===========================================================================
-
 class TestParseEslint:
 
     # --- 3.1 Happy path ---
@@ -433,10 +407,6 @@ class TestParseEslint:
         assert f["line"] is None
 
 
-# ===========================================================================
-# 4. SEVERITY NORMALIZER UNIT TESTS
-# ===========================================================================
-
 class TestSeverityNormalizers:
 
     def test_bandit_high(self):      assert _normalize_severity_bandit("HIGH")     == "HIGH"
@@ -456,10 +426,6 @@ class TestSeverityNormalizers:
     def test_eslint_0(self):  assert _normalize_severity_eslint(0) == "LOW"
     def test_eslint_3(self):  assert _normalize_severity_eslint(3) == "HIGH"   # anything ≥2 = HIGH
 
-
-# ===========================================================================
-# 5. CWE EXTRACTOR UNIT TESTS
-# ===========================================================================
 
 class TestExtractCWESemgrep:
 
@@ -485,10 +451,6 @@ class TestExtractCWESemgrep:
         assert _extract_cwe_semgrep({"CWE": ["CWE-502: Deserialization"]}) == "CWE-502"
 
 
-# ===========================================================================
-# 6. PATH NORMALIZER UNIT TESTS
-# ===========================================================================
-
 class TestMakePathRelative:
 
     def test_absolute_with_base_dir(self):
@@ -505,15 +467,11 @@ class TestMakePathRelative:
         assert _make_path_relative("/app/main.py", "/app") == "main.py"
 
 
-# ===========================================================================
-# 7. NORMALIZE_ALL INTEGRATION TESTS
-# ===========================================================================
-
 class TestNormalizeAll:
     """Integration tests for normalize_all(raw_results).
 
-    Uses tmp_path to write real JSON files so the file-based interface
-    matches what the orchestrator (Part 1) actually passes in.
+    Writes real JSON to tmp_path so the file-based interface matches what
+    the orchestrator passes in at runtime.
     """
 
     # --- helpers ---

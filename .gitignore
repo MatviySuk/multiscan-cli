@@ -1,4 +1,16 @@
 .venv/
 __pycache__/
-output/
 *.pyc
+.pytest_cache/
+
+.DS_Store
+.home/
+
+node_modules/
+juice-shop/
+
+output/
+results.json
+results_*.json
+semgrep.json
+baseline.json

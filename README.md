@@ -1,109 +1,129 @@
-# 🔍 MultiScan CLI
+# MultiScan CLI
 
-**One command. Multiple analyzers. Zero noise.**
+A small command-line tool that runs Bandit, Semgrep and ESLint in parallel,
+normalizes their outputs into one schema, deduplicates overlapping findings,
+and prints a prioritized report. Built for the Secure Software Engineering
+course as the "MultiScan CLI" project.
 
-MultiScan CLI is a unified security orchestration tool designed to run multiple static analysis tools simultaneously, normalize their outputs, and provide a deduplicated, prioritized report. It solves the "tool fatigue" problem by merging overlapping alerts from different scanners into a single, high-confidence finding.
+The evaluation target is OWASP Juice Shop v15.0.0 — see `evaluation/` for the
+ground truth and the metrics script.
 
----
+## Layout
 
-## 🚀 Key Features
-
-- **Parallel Orchestration**: Runs `Semgrep`, `Bandit`, and `ESLint` concurrently using a multi-threaded runner.
-- **Intelligent Deduplication**: Merges findings that share similar locations (±5 lines), CWE IDs, or message tokens.
-- **Confidence Scoring**: Prioritizes alerts using a mathematical formula:  
-  `0.4*ToolAgreement + 0.25*Severity + 0.2*CWEAgreement + 0.15*LocationOverlap`
-- **Baseline Mode**: Filter out known findings to focus only on new vulnerabilities.
-- **Unified Schema**: Normalizes messy tool outputs into a clean, actionable JSON format.
-
----
-
-## 🛠️ Architecture
-
-```mermaid
-graph TD
-    A[Developer] -->|multiscan.py| B(Part 1: Runner)
-    B -->|Parallel Exec| C[Semgrep]
-    B -->|Parallel Exec| D[Bandit]
-    B -->|Parallel Exec| E[ESLint]
-    C & D & E -->|Raw JSON| F(Part 2: Normalizer)
-    F -->|Unified List| G(Part 3: Deduplicator)
-    G -->|Scored List| H(Final Report)
-    H -->|CLI Table| I[Terminal]
-    H -->|JSON Export| J[results.json]
+```
+multiscan.py            # CLI entry point and orchestrator
+normalizer.py           # per-tool JSON parsers + unified schema
+deduplicator.py         # duplicate detection and confidence scoring
+config/settings.py      # severity tables and similarity thresholds
+evaluation/             # ground truth, metrics, committed raw samples
+tests/                  # pytest suite (parsers, dedup, metrics, integration)
+scripts/                # fetch_juice_shop.sh
 ```
 
----
+## Setup
 
-## 📦 Installation
-
-### 1. Prerequisites
-Ensure you have the core security tools installed on your system:
-- **Semgrep**: `brew install semgrep` or `pip install semgrep`
-- **Bandit**: `pip install bandit`
-- **ESLint**: `npm install -g eslint` (Ensure `eslint-plugin-security` is configured in your target)
-
-### 2. Setup MultiScan
 ```bash
-# Clone the repository
-git clone https://github.com/your-repo/multiscan-cli.git
-cd multiscan-cli
-
-# Create and activate virtual environment
 python3 -m venv .venv
 source .venv/bin/activate
-
-# Install dependencies
 pip install -r requirements.txt
+npm install            # ESLint + eslint-plugin-security
+bash scripts/fetch_juice_shop.sh   # clones Juice Shop v15.0.0 into ./juice-shop
 ```
 
----
+The `pip install` pulls in `semgrep`, `bandit`, `click`, `rich` and `pytest`.
+You also need `which` (POSIX) — on Windows the tool uses `where` instead.
 
-## 🖥️ Usage
+## Run
 
-### Basic Scan
-Scan a directory and let MultiScan auto-detect the language:
 ```bash
-python3 multiscan.py --target ./myapp
+# whole repo, auto-pick tools
+python multiscan.py --target ./juice-shop --output results.json
+
+# python-only target
+python multiscan.py --target ./test_vuln --lang python
+
+# baseline mode: hide findings already present in a previous report
+python multiscan.py --target ./juice-shop --baseline results.json
 ```
 
-### Language Filtering
-Focus on a specific tech stack:
+The terminal summary prints raw count, dedup count, baseline-filtered count
+(when `--baseline` is passed) and scan duration. The JSON written by
+`--output` is the deduplicated list, in the unified schema.
+
+## Unified schema
+
+Every finding, regardless of which tool produced it, ends up shaped like:
+
+```json
+{
+  "path": "routes/search.ts",
+  "line": 23,
+  "tool": ["Semgrep"],
+  "rule_id": "CWE-89",
+  "severity": "HIGH",
+  "message": "SQL injection via raw sequelize.query",
+  "confidence": 0.66
+}
+```
+
+`tool` is a list because the deduplicator merges multi-tool agreements into
+a single entry.
+
+## How deduplication decides
+
+Two findings are merged when they share the same file path and at least two
+of the following hold:
+
+- their line numbers are within ±5 lines of each other,
+- they carry the same CWE,
+- their messages are at least 65% similar (Python's `difflib.SequenceMatcher`).
+
+The same-file precondition was added after we saw the unconditional 2-of-3
+rule merge unrelated CWE-89 findings across `routes/search.ts` and
+`routes/login.ts`. The thresholds live in `config/settings.py`.
+
+## Confidence score
+
+After merging, each finding is scored:
+
+```
+confidence = 0.4 * tool_agreement
+           + 0.25 * severity
+           + 0.2  * cwe_agreement
+           + 0.15 * location_overlap
+```
+
+`tool_agreement` is `len(tools) / 3`, `severity` is HIGH=1.0 / MED=0.6 /
+LOW=0.3, and the two agreement fields are 1.0 when all merged findings
+share the same CWE or location and 0.5 otherwise.
+
+## Evaluation
+
 ```bash
-python3 multiscan.py --target ./myapp --lang python
+python multiscan.py --target ./juice-shop --output results.json
+python evaluation/metrics.py results.json <raw_total_from_summary>
 ```
 
-### Baseline Mode (Extension)
-Only show new findings compared to a previous scan:
+`metrics.py` reports both an exact-CWE match score and a CWE-family score
+(so a Semgrep CWE-1104 detection on a ground-truth CWE-94 entry still counts
+as a true positive). Results are saved to `evaluation/evaluation_results.json`.
+
+Sample raw scans from a v15.0.0 run live in `evaluation/raw_samples/` so the
+before/after comparison is reproducible without re-running the tools.
+
+## Tests
+
 ```bash
-python3 multiscan.py --target ./myapp --baseline previous_report.json
+pytest -q
 ```
 
----
+Covers the parsers, severity/CWE mappers, the deduplication logic and the
+metric computations.
 
-## 🧩 Developer Integration (Internal API)
+## Notes
 
-MultiScan is built with a modular "Interface" design to allow independent development:
-
-### Part 1: Runner (`multiscan.py`)
-Responsible for thread management, subprocess safety, and the `rich` terminal UI.
-
-### Part 2: Normalizer (`normalizer.py`)
-Processes raw files from `output/raw/`.  
-**Contract**: `raw_results (dict) -> List[NormalizedFinding]`
-
-### Part 3: Deduplicator (`deduplicator.py`)
-Implements fuzzy matching and the scoring algorithm.  
-**Contract**: `List[NormalizedFinding] -> (ProcessedList, Stats)`
-
----
-
-## 📊 Evaluation Metrics
-This tool is evaluated against real-world vulnerable apps (e.g., *Juice Shop*, *WebGoat*) based on:
-- **Duplicate Reduction Rate**: Goal ≥ 30% reduction.
-- **Precision**: % of reported findings that are real vulnerabilities.
-- **Recall**: % of known vulnerabilities captured.
-
----
-
-## 📜 License
-Distributed under the MIT License. See `LICENSE` for more information.
+- The `--lang` filter currently routes to `Semgrep + Bandit` (python) or
+  `Semgrep + ESLint` (javascript). Without the flag, all three are run.
+- Bandit produces no findings on a TypeScript target — that's expected.
+- ESLint emits ~1300 `detect-object-injection` warnings on Juice Shop's
+  minified vendor bundles; the deduplicator collapses these into a handful.

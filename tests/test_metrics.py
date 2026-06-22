@@ -55,10 +55,6 @@ def _finding(path, line, cwe, severity="HIGH", tool=None):
     }
 
 
-# ---------------------------------------------------------------------------
-# matches_ground_truth
-# ---------------------------------------------------------------------------
-
 class TestMatchesGroundTruth:
     def test_exact_match(self):
         f = _finding("routes/search.ts", 42, "CWE-89")
@@ -93,10 +89,6 @@ class TestMatchesGroundTruth:
         result = matches_ground_truth(f, SAMPLE_GT[0])
         assert isinstance(result, bool)
 
-
-# ---------------------------------------------------------------------------
-# evaluate — basic classification
-# ---------------------------------------------------------------------------
 
 class TestEvaluateClassification:
     def test_all_true_positives(self):
@@ -146,10 +138,6 @@ class TestEvaluateClassification:
         assert m["false_positives"] == 1
 
 
-# ---------------------------------------------------------------------------
-# evaluate — precision, recall, F1
-# ---------------------------------------------------------------------------
-
 class TestEvaluateDerivedMetrics:
     def test_perfect_precision_and_recall(self):
         findings = [
@@ -192,10 +180,6 @@ class TestEvaluateDerivedMetrics:
         assert m["f1_score"] == 0.0
 
 
-# ---------------------------------------------------------------------------
-# evaluate — duplicate reduction rate
-# ---------------------------------------------------------------------------
-
 class TestDuplicateReductionRate:
     def test_thirty_percent_reduction(self):
         findings = [_finding("routes/search.ts", 42, "CWE-89")]
@@ -223,10 +207,6 @@ class TestDuplicateReductionRate:
         m = evaluate([], [], raw_count=0)
         assert m["duplicate_reduction_rate"] == 0.0
 
-
-# ---------------------------------------------------------------------------
-# evaluate — output structure
-# ---------------------------------------------------------------------------
 
 class TestEvaluateOutputStructure:
     def test_all_expected_keys_present(self):

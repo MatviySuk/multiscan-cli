@@ -1,3 +1,6 @@
 click
 rich
 tabulate
+pytest
+semgrep
+bandit

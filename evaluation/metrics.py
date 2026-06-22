@@ -1,20 +1,28 @@
-"""
-metrics.py — Part 4: Evaluation metrics for MultiScan CLI
-Computes TP/FP/FN, precision, recall, F1, and duplicate reduction rate
-against the manually verified ground truth for OWASP Juice Shop.
+"""Compare processed multiscan findings against the manually verified Juice Shop ground truth.
 
 Usage:
-    python evaluation/metrics.py <processed_results.json> <raw_total_count>
-
-Example:
-    python evaluation/metrics.py output/results.json 23
+    python evaluation/metrics.py <results.json> <raw_total_count>
 """
 
 import json
 import sys
 from pathlib import Path
 
+
 LINE_TOLERANCE = 10
+
+# Sub-CWEs frequently emitted for the same underlying weakness. Used so the
+# eval doesn't punish a Semgrep CWE-89 against a ground-truth CWE-943 entry
+# when both describe the same injection vulnerability.
+CWE_FAMILIES = [
+    {"CWE-77", "CWE-78", "CWE-89", "CWE-917", "CWE-943"},
+    {"CWE-94", "CWE-95", "CWE-502", "CWE-915", "CWE-1104", "CWE-1321", "CWE-1336"},
+    {"CWE-259", "CWE-321", "CWE-326", "CWE-327", "CWE-338", "CWE-798"},
+    {"CWE-22", "CWE-23", "CWE-73", "CWE-706"},
+    {"CWE-79", "CWE-80", "CWE-83", "CWE-87"},
+    {"CWE-209", "CWE-532"},
+    {"CWE-611", "CWE-776", "CWE-827"},
+]
 
 
 def load_json(path):
@@ -22,36 +30,33 @@ def load_json(path):
         return json.load(f)
 
 
-def matches_ground_truth(finding, gt_entry):
-    """
-    Returns True if a processed finding corresponds to a ground truth entry.
+def same_cwe_family(a: str, b: str) -> bool:
+    if not a or not b:
+        return False
+    if a == b:
+        return True
+    for fam in CWE_FAMILIES:
+        if a in fam and b in fam:
+            return True
+    return False
 
-    Matching criteria (all three must hold):
-      1. Same filename (basename comparison, handles absolute vs relative paths)
-      2. Same CWE identifier
-      3. Line number within LINE_TOLERANCE of the ground truth line
-    """
-    finding_name = Path(finding.get("path", "")).name
-    gt_name = Path(gt_entry["path"]).name
 
-    if finding_name != gt_name:
+def matches_ground_truth(finding, gt_entry, family_ok: bool = False):
+    """Same basename + (exact CWE or family CWE) + line within tolerance."""
+    if Path(finding.get("path", "")).name != Path(gt_entry["path"]).name:
         return False
 
-    if finding.get("rule_id") != gt_entry["cwe"]:
+    finding_cwe = finding.get("rule_id", "")
+    gt_cwe = gt_entry["cwe"]
+    cwe_ok = same_cwe_family(finding_cwe, gt_cwe) if family_ok else (finding_cwe == gt_cwe)
+    if not cwe_ok:
         return False
 
-    finding_line = finding.get("line") or 0
-    gt_line = gt_entry["line"]
-
-    return abs(finding_line - gt_line) <= LINE_TOLERANCE
+    line_diff = abs((finding.get("line") or 0) - gt_entry["line"])
+    return line_diff <= LINE_TOLERANCE
 
 
-def evaluate(processed_findings, ground_truth, raw_count):
-    """
-    Compare processed findings against the ground truth.
-
-    Returns a dict containing all evaluation metrics.
-    """
+def evaluate(processed_findings, ground_truth, raw_count, family_ok: bool = False):
     tp_findings = []
     fp_findings = []
     matched_gt_ids = set()
@@ -61,7 +66,7 @@ def evaluate(processed_findings, ground_truth, raw_count):
         for gt in ground_truth:
             if gt["id"] in matched_gt_ids:
                 continue
-            if matches_ground_truth(finding, gt):
+            if matches_ground_truth(finding, gt, family_ok):
                 tp_findings.append({"finding": finding, "matched_gt": gt["id"]})
                 matched_gt_ids.add(gt["id"])
                 matched = True
@@ -78,14 +83,11 @@ def evaluate(processed_findings, ground_truth, raw_count):
 
     precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
     recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
-    f1 = (
-        (2 * precision * recall) / (precision + recall)
-        if (precision + recall) > 0
-        else 0.0
-    )
+    f1 = (2 * precision * recall) / (precision + recall) if (precision + recall) > 0 else 0.0
     dup_reduction = (raw_count - processed_count) / raw_count if raw_count > 0 else 0.0
 
     return {
+        "matching_mode": "cwe_family" if family_ok else "cwe_exact",
         "raw_count": raw_count,
         "processed_count": processed_count,
         "duplicates_removed": raw_count - processed_count,
@@ -102,51 +104,44 @@ def evaluate(processed_findings, ground_truth, raw_count):
     }
 
 
-def print_report(metrics):
-    sep = "=" * 52
+def print_report(exact, family):
+    sep = "=" * 56
     print(f"\n{sep}")
     print("  MultiScan CLI — Evaluation Report")
-    print(f"  Target : OWASP Juice Shop v15.0.0")
+    print("  Target : OWASP Juice Shop v15.0.0")
     print(sep)
 
-    print("\n  Noise Reduction")
-    print("  " + "─" * 38)
-    print(f"  Raw findings (combined tools) : {metrics['raw_count']}")
-    print(f"  After deduplication           : {metrics['processed_count']}")
-    print(f"  Duplicates removed            : {metrics['duplicates_removed']}")
-    rate = metrics["duplicate_reduction_rate"] * 100
-    target_met = "✓ PASS" if metrics["duplicate_reduction_rate"] >= 0.30 else "✗ FAIL"
-    print(f"  Reduction rate                : {rate:.1f}%  (≥30% target {target_met})")
+    print("\n  Noise reduction")
+    print("  " + "-" * 40)
+    print(f"  Raw findings (combined tools) : {family['raw_count']}")
+    print(f"  After deduplication           : {family['processed_count']}")
+    print(f"  Duplicates removed            : {family['duplicates_removed']}")
+    rate = family["duplicate_reduction_rate"] * 100
+    target_met = "PASS" if family["duplicate_reduction_rate"] >= 0.30 else "FAIL"
+    print(f"  Reduction rate                : {rate:.1f}%  (>=30% target {target_met})")
 
-    print("\n  Detection Quality")
-    print("  " + "─" * 38)
-    print(f"  True  positives (TP)          : {metrics['true_positives']}")
-    print(f"  False positives (FP)          : {metrics['false_positives']}")
-    print(f"  False negatives (FN)          : {metrics['false_negatives']}")
-    print(f"  Precision                     : {metrics['precision']*100:.1f}%")
-    print(f"  Recall                        : {metrics['recall']*100:.1f}%")
-    print(f"  F1 Score                      : {metrics['f1_score']*100:.1f}%")
+    for label, metrics in (("Exact-CWE match", exact), ("CWE-family match", family)):
+        print(f"\n  Detection quality - {label}")
+        print("  " + "-" * 40)
+        print(f"  True positives                : {metrics['true_positives']}")
+        print(f"  False positives               : {metrics['false_positives']}")
+        print(f"  False negatives               : {metrics['false_negatives']}")
+        print(f"  Precision                     : {metrics['precision']*100:.1f}%")
+        print(f"  Recall                        : {metrics['recall']*100:.1f}%")
+        print(f"  F1 score                      : {metrics['f1_score']*100:.1f}%")
 
-    if metrics["fn_ground_truth"]:
-        print(f"\n  Missed ground-truth entries   : {', '.join(metrics['fn_ground_truth'])}")
-    if metrics["fp_findings"]:
-        print(f"  False-positive paths          :")
-        for fp_path in metrics["fp_findings"]:
-            print(f"    - {fp_path}")
-
+    if family["fn_ground_truth"]:
+        print(f"\n  Missed ground-truth entries   : {', '.join(family['fn_ground_truth'])}")
     print(f"\n{sep}\n")
 
 
 if __name__ == "__main__":
     base = Path(__file__).parent
-
     gt_data = load_json(base / "ground_truth.json")
     ground_truth = gt_data["vulnerabilities"]
 
     if len(sys.argv) < 3:
-        print(
-            "Usage: python evaluation/metrics.py <processed_results.json> <raw_total_count>"
-        )
+        print("Usage: python evaluation/metrics.py <processed_results.json> <raw_total_count>")
         sys.exit(1)
 
     results_path = Path(sys.argv[1])
@@ -158,10 +153,11 @@ if __name__ == "__main__":
     else:
         processed = raw
 
-    metrics = evaluate(processed, ground_truth, raw_count)
-    print_report(metrics)
+    exact = evaluate(processed, ground_truth, raw_count, family_ok=False)
+    family = evaluate(processed, ground_truth, raw_count, family_ok=True)
+    print_report(exact, family)
 
     out_path = base / "evaluation_results.json"
     with open(out_path, "w") as f:
-        json.dump(metrics, f, indent=2)
+        json.dump({"exact": exact, "family": family}, f, indent=2)
     print(f"  Full metrics saved to: {out_path}\n")

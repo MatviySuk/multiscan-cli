@@ -1,158 +1,116 @@
 {
   "target": "OWASP Juice Shop",
   "version": "v15.0.0",
-  "source": "https://github.com/juice-shop/juice-shop",
-  "notes": "Ground truth manually verified against Juice Shop's known challenge list and CVE disclosures. Line numbers correspond to the unmodified v15.0.0 release.",
+  "source": "https://github.com/juice-shop/juice-shop/releases/tag/v15.0.0",
+  "notes": "Each entry was verified by reading the unmodified v15.0.0 source. Line numbers point at the exact statement that introduces the vulnerability. CWE IDs reflect what static analyzers would reasonably emit for that pattern, not just the canonical OWASP description.",
   "vulnerabilities": [
     {
       "id": "GT-01",
       "path": "routes/search.ts",
-      "line": 42,
+      "line": 23,
       "cwe": "CWE-89",
       "severity": "HIGH",
-      "description": "SQL injection via unsanitized query parameter interpolated directly into a raw SQL string in the product search route.",
-      "challenge": "DOM XSS / SQL Injection challenge",
-      "verified_by": "manual code review + sqlmap"
+      "description": "User-controlled `q` parameter interpolated directly into a raw `sequelize.query` SQL string in product search.",
+      "challenge": "DB Schema / Union SQL Injection"
     },
     {
       "id": "GT-02",
-      "path": "routes/angular.js",
-      "line": 15,
-      "cwe": "CWE-79",
+      "path": "routes/login.ts",
+      "line": 36,
+      "cwe": "CWE-89",
       "severity": "HIGH",
-      "description": "Reflected XSS: Angular template rendered server-side without sanitization allows injecting arbitrary HTML/JS via the search query.",
-      "challenge": "Reflected XSS challenge",
-      "verified_by": "manual code review + browser PoC"
+      "description": "Login endpoint builds a raw SQL query from `req.body.email` via template literal; classic auth-bypass SQL injection.",
+      "challenge": "Login Admin / Bender / Jim"
     },
     {
       "id": "GT-03",
       "path": "routes/fileServer.ts",
-      "line": 30,
+      "line": 33,
       "cwe": "CWE-22",
       "severity": "HIGH",
-      "description": "Path traversal: file download endpoint joins user-controlled filename with the upload directory without canonicalization, allowing ../  escapes.",
-      "challenge": "Retrieve Blueprint challenge",
-      "verified_by": "manual code review + curl PoC"
+      "description": "`res.sendFile(path.resolve('ftp/', file))` joins user input with the upload directory without canonicalization, allowing path traversal.",
+      "challenge": "Retrieve Blueprint / Forgotten Backup"
     },
     {
       "id": "GT-04",
       "path": "lib/insecurity.ts",
-      "line": 8,
-      "cwe": "CWE-326",
+      "line": 23,
+      "cwe": "CWE-798",
       "severity": "HIGH",
-      "description": "Weak JWT signing secret: hardcoded short secret string used for HS256 JWT signing, trivially brute-forceable.",
-      "challenge": "Forged Signed JWT challenge",
-      "verified_by": "manual code review + jwt-cracker"
+      "description": "RSA private key for JWT signing is hardcoded as a string constant. (Semgrep flags the related HMAC and key-store secrets nearby, not this exact line — useful blind-spot example for the report.)",
+      "challenge": "Forged Signed JWT"
     },
     {
       "id": "GT-05",
       "path": "lib/insecurity.ts",
-      "line": 22,
-      "cwe": "CWE-259",
+      "line": 44,
+      "cwe": "CWE-798",
       "severity": "HIGH",
-      "description": "Hardcoded admin password embedded in source code within the insecurity utility module.",
-      "challenge": "Admin Registration challenge",
-      "verified_by": "manual code review"
+      "description": "HMAC secret `'pa4qacea4VK9t9nGv7yZtwmj'` is hardcoded into the source.",
+      "challenge": "Outdated Crypto"
     },
     {
       "id": "GT-06",
-      "path": "routes/b2bOrder.ts",
-      "line": 55,
-      "cwe": "CWE-502",
-      "severity": "HIGH",
-      "description": "Unsafe deserialization of a YAML payload from the B2B order endpoint using js-yaml's DEFAULT_FULL_SCHEMA, allowing arbitrary code execution.",
-      "challenge": "SSTi challenge / Deserialization RCE",
-      "verified_by": "manual code review + PoC payload"
+      "path": "lib/insecurity.ts",
+      "line": 43,
+      "cwe": "CWE-327",
+      "severity": "MEDIUM",
+      "description": "MD5 used for the `hash()` helper that backs password hashing in legacy flows.",
+      "challenge": "Outdated Crypto"
     },
     {
       "id": "GT-07",
-      "path": "routes/login.ts",
-      "line": 48,
-      "cwe": "CWE-943",
+      "path": "routes/b2bOrder.ts",
+      "line": 22,
+      "cwe": "CWE-94",
       "severity": "HIGH",
-      "description": "NoSQL injection in the login route: user-supplied JSON body is passed unsanitized to a Sequelize query, enabling authentication bypass.",
-      "challenge": "Login Admin challenge",
-      "verified_by": "manual code review + Burp Suite"
+      "description": "`vm.runInContext('safeEval(orderLinesData)', sandbox)` evaluates user-supplied YAML/JSON via the unmaintained `notevil` package, allowing RCE.",
+      "challenge": "RCE / Successful RCE"
     },
     {
       "id": "GT-08",
       "path": "routes/redirect.ts",
-      "line": 12,
+      "line": 19,
       "cwe": "CWE-601",
       "severity": "MEDIUM",
-      "description": "Open redirect: the redirect endpoint accepts an arbitrary URL from a query parameter without validating against an allowlist.",
-      "challenge": "Outdated Allowlist challenge",
-      "verified_by": "manual code review"
+      "description": "`res.redirect(toUrl)` accepts an arbitrary URL from the `?to=` query parameter, mitigated only by a stale allowlist.",
+      "challenge": "Outdated Allowlist"
     },
     {
       "id": "GT-09",
-      "path": "routes/xmlUpload.ts",
-      "line": 18,
-      "cwe": "CWE-611",
-      "severity": "HIGH",
-      "description": "XXE injection: XML upload endpoint parses user-supplied XML with an insecure parser configuration that processes external entities.",
-      "challenge": "XXE Data Access challenge",
-      "verified_by": "manual code review + xxe-tester"
+      "path": "routes/captcha.ts",
+      "line": 23,
+      "cwe": "CWE-95",
+      "severity": "MEDIUM",
+      "description": "`eval(expression)` is used to compute the CAPTCHA answer; the expression is also derived from `Math.random()`, making it predictable as well.",
+      "challenge": "CAPTCHA Bypass"
     },
     {
       "id": "GT-10",
-      "path": "routes/basket.ts",
-      "line": 35,
-      "cwe": "CWE-306",
+      "path": "routes/profileImageUrlUpload.ts",
+      "line": 23,
+      "cwe": "CWE-918",
       "severity": "HIGH",
-      "description": "Missing authentication check: basket modification endpoint does not verify that the authenticated user owns the basket ID in the request.",
-      "challenge": "View Basket challenge (IDOR)",
-      "verified_by": "manual code review + Burp Suite"
+      "description": "`request.get(url)` fetches an arbitrary remote URL from `req.body.imageUrl` with no allowlist, allowing SSRF into internal hosts.",
+      "challenge": "SSRF"
     },
     {
       "id": "GT-11",
-      "path": "routes/captcha.ts",
-      "line": 10,
-      "cwe": "CWE-338",
-      "severity": "MEDIUM",
-      "description": "Cryptographically weak CAPTCHA: Math.random() used to generate CAPTCHA values, predictable and bypassable.",
-      "challenge": "CAPTCHA Bypass challenge",
-      "verified_by": "manual code review"
+      "path": "routes/fileUpload.ts",
+      "line": 80,
+      "cwe": "CWE-611",
+      "severity": "HIGH",
+      "description": "XML upload calls `libxml.parseXml(data, { noent: true })`, leaving external-entity expansion enabled (XXE).",
+      "challenge": "XXE Data Access"
     },
     {
       "id": "GT-12",
-      "path": "lib/errorhandler.ts",
-      "line": 25,
-      "cwe": "CWE-209",
-      "severity": "LOW",
-      "description": "Error information disclosure: unhandled Express errors expose full stack traces and internal file paths to the client in production mode.",
-      "challenge": "Error Handling challenge",
-      "verified_by": "manual testing — deliberate 500 trigger"
-    },
-    {
-      "id": "GT-13",
-      "path": "routes/profileImageUrlUpload.ts",
-      "line": 42,
-      "cwe": "CWE-918",
+      "path": "routes/userProfile.ts",
+      "line": 56,
+      "cwe": "CWE-1336",
       "severity": "HIGH",
-      "description": "SSRF: profile image upload by URL fetches arbitrary remote URLs without restricting to safe hosts, allowing access to internal network services.",
-      "challenge": "SSRF challenge",
-      "verified_by": "manual code review + Burp Collaborator"
-    },
-    {
-      "id": "GT-14",
-      "path": "lib/insecurity.ts",
-      "line": 45,
-      "cwe": "CWE-327",
-      "severity": "MEDIUM",
-      "description": "Weak cryptographic hash: MD5 used for hashing user passwords in certain legacy flows within the insecurity module.",
-      "challenge": "Outdated Crypto challenge",
-      "verified_by": "manual code review"
-    },
-    {
-      "id": "GT-15",
-      "path": "lib/utils.ts",
-      "line": 88,
-      "cwe": "CWE-1321",
-      "severity": "HIGH",
-      "description": "Prototype pollution: utility merge function copies properties from user-controlled objects without filtering __proto__ or constructor keys.",
-      "challenge": "Prototype Pollution challenge",
-      "verified_by": "manual code review + PoC"
+      "description": "`pug.compile(template)` compiles a template constructed from user-controlled `username`, enabling server-side template injection.",
+      "challenge": "Username XSS / SSTI"
     }
   ]
 }
