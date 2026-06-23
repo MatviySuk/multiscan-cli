@@ -554,7 +554,7 @@ class TestNormalizeAll:
             assert required_keys.issubset(f.keys()), f"Finding missing keys: {required_keys - f.keys()}"
 
     def test_severity_values_are_valid(self, tmp_path):
-        """Severity must always be HIGH, MEDIUM, or LOW — never anything else."""
+        """Severity must always be HIGH, MEDIUM, or LOW, never anything else."""
         valid = {"HIGH", "MEDIUM", "LOW"}
         raw = self._raw_results(tmp_path,
             bandit={"results": [

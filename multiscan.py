@@ -1,7 +1,8 @@
-"""Orchestrate Bandit, Semgrep and ESLint scans, then print/export the merged report."""
+"""Run Bandit, Semgrep and ESLint in parallel, then print and export the merged report."""
 
 import click
 import json
+import shutil
 import subprocess
 import time
 import os
@@ -62,18 +63,19 @@ class MultiScanCLI:
             "baseline_filtered": 0,
         }
 
-    def check_dependencies(self, tools: List[str]) -> List[str]:
+    def resolve_binary(self, name: str) -> Optional[str]:
+        """Find a tool binary, preferring a local npm install over PATH."""
+        local = os.path.join("node_modules", ".bin", name)
+        if os.path.isfile(local) and os.access(local, os.X_OK):
+            return os.path.abspath(local)
+        return shutil.which(name)
+
+    def check_dependencies(self, tools: Dict[str, List[str]]) -> List[str]:
+        """Return the subset of tool names whose first command-line arg can't be resolved."""
         missing = []
-        which = "where" if os.name == "nt" else "which"
-        for tool in tools:
-            try:
-                result = subprocess.run(
-                    [which, tool.lower()], capture_output=True, text=True
-                )
-                if result.returncode != 0:
-                    missing.append(tool)
-            except Exception:
-                missing.append(tool)
+        for name, argv in tools.items():
+            if self.resolve_binary(argv[0]) is None:
+                missing.append(name)
         return missing
 
     def run_analyzer(self, tool_name: str, cmd_args: List[str]) -> Dict[str, Any]:
@@ -137,8 +139,16 @@ class MultiScanCLI:
         else:
             tools_to_run = list(registry.keys())
 
-        missing_tools = self.check_dependencies(tools_to_run)
+        wanted = {name: registry[name] for name in tools_to_run}
+        missing_tools = self.check_dependencies(wanted)
         active_tools = [t for t in tools_to_run if t not in missing_tools]
+
+        # Rewrite each surviving registry entry to use the resolved binary path,
+        # so a locally-installed eslint is picked up without being on PATH.
+        for name in active_tools:
+            argv = list(registry[name])
+            argv[0] = self.resolve_binary(argv[0]) or argv[0]
+            registry[name] = argv
         self.stats["tools_attempted"] = len(active_tools)
 
         if missing_tools:

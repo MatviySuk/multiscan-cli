@@ -37,7 +37,7 @@
       "line": 23,
       "cwe": "CWE-798",
       "severity": "HIGH",
-      "description": "RSA private key for JWT signing is hardcoded as a string constant. (Semgrep flags the related HMAC and key-store secrets nearby, not this exact line — useful blind-spot example for the report.)",
+      "description": "RSA private key for JWT signing is hardcoded as a string constant. (Semgrep flags the related HMAC and key-store secrets nearby, not this exact line; useful blind-spot example for the report.)",
       "challenge": "Forged Signed JWT"
     },
     {

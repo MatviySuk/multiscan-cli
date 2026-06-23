@@ -59,7 +59,7 @@ def test_duplicate_reduction_meets_target(dedup_result):
 def test_output_smaller_than_input(dedup_result, raw_normalized):
     processed, stats = dedup_result
     assert len(processed) < len(raw_normalized), (
-        "Processed list should be smaller than the raw input — duplicates exist in the fixture."
+        "Processed list should be smaller than the raw input; duplicates exist in the fixture."
     )
 
 
@@ -143,7 +143,7 @@ def test_severity_is_always_highest_after_merge(dedup_result, raw_normalized):
 def test_no_duplicate_path_cwe_pairs_in_output(dedup_result):
     """
     After deduplication, no two findings should share the same (path, rule_id)
-    combination — that would mean a duplicate slipped through.
+    combination; that would mean a duplicate slipped through.
     """
     processed, _ = dedup_result
     seen = set()

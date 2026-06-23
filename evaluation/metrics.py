@@ -107,7 +107,7 @@ def evaluate(processed_findings, ground_truth, raw_count, family_ok: bool = Fals
 def print_report(exact, family):
     sep = "=" * 56
     print(f"\n{sep}")
-    print("  MultiScan CLI — Evaluation Report")
+    print("  MultiScan CLI: Evaluation Report")
     print("  Target : OWASP Juice Shop v15.0.0")
     print(sep)
 

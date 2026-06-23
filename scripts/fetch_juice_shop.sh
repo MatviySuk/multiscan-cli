@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Pull a fresh copy of OWASP Juice Shop v15.0.0 into ./juice-shop.
-# Used as the evaluation target — the ground truth in evaluation/ground_truth.json
+# Used as the evaluation target; the ground truth in evaluation/ground_truth.json
 # is pinned to this exact release.
 set -e
 

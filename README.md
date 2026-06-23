@@ -5,8 +5,8 @@ normalizes their outputs into one schema, deduplicates overlapping findings,
 and prints a prioritized report. Built for the Secure Software Engineering
 course as the "MultiScan CLI" project.
 
-The evaluation target is OWASP Juice Shop v15.0.0 — see `evaluation/` for the
-ground truth and the metrics script.
+The evaluation target is OWASP Juice Shop v15.0.0; the ground truth and
+metrics script live under `evaluation/`.
 
 ## Layout
 
@@ -20,18 +20,43 @@ tests/                  # pytest suite (parsers, dedup, metrics, integration)
 scripts/                # fetch_juice_shop.sh
 ```
 
+## Prerequisites
+
+The host system needs:
+
+- Python 3.10 or newer (we use `int | None` PEP 604 syntax)
+- Node.js 18 or newer (required by ESLint 9)
+- `npm`, `git`, `bash`
+
+Everything else (`semgrep`, `bandit`, `pytest`, `eslint`, `eslint-plugin-security`)
+is pinned in `requirements.txt` and `package.json` and installed by the setup
+commands below.
+
 ## Setup
+
+From a fresh clone, run these once:
 
 ```bash
 python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-npm install            # ESLint + eslint-plugin-security
-bash scripts/fetch_juice_shop.sh   # clones Juice Shop v15.0.0 into ./juice-shop
+source .venv/bin/activate                   # required for every shell session
+pip install -r requirements.txt             # semgrep, bandit, click, rich, pytest
+npm install                                 # eslint + eslint-plugin-security (local)
+bash scripts/fetch_juice_shop.sh            # clones Juice Shop v15.0.0 into ./juice-shop
 ```
 
-The `pip install` pulls in `semgrep`, `bandit`, `click`, `rich` and `pytest`.
-You also need `which` (POSIX) — on Windows the tool uses `where` instead.
+ESLint is resolved from `./node_modules/.bin/` first, so a local `npm install`
+is enough; you do not need a global install. Activating the venv is what puts
+`semgrep` and `bandit` on the path. If you open a new shell, `source` it again
+before running the CLI.
+
+## Quick smoke test
+
+To confirm the install end-to-end without waiting on a full Juice Shop scan:
+
+```bash
+python multiscan.py --target ./test_vuln       # 12 raw -> 5 deduped
+pytest -q                                       # 131 tests
+```
 
 ## Run
 
@@ -101,12 +126,19 @@ share the same CWE or location and 0.5 otherwise.
 
 ```bash
 python multiscan.py --target ./juice-shop --output results.json
-python evaluation/metrics.py results.json <raw_total_from_summary>
+# Look at the summary line, e.g.: "Raw findings: 1358 | Duplicates removed: ..."
+# Pass that number as the second argument to metrics.py:
+python evaluation/metrics.py results.json 1358
 ```
 
 `metrics.py` reports both an exact-CWE match score and a CWE-family score
 (so a Semgrep CWE-1104 detection on a ground-truth CWE-94 entry still counts
 as a true positive). Results are saved to `evaluation/evaluation_results.json`.
+
+On a clean v15.0.0 run we see roughly:
+- raw: 1358, deduped: 49, reduction rate: 96.4%
+- exact-CWE recall: 75% (9/12), precision: 18.4%
+- CWE-family recall: 83.3% (10/12), precision: 20.4%
 
 Sample raw scans from a v15.0.0 run live in `evaluation/raw_samples/` so the
 before/after comparison is reproducible without re-running the tools.
@@ -124,6 +156,6 @@ metric computations.
 
 - The `--lang` filter currently routes to `Semgrep + Bandit` (python) or
   `Semgrep + ESLint` (javascript). Without the flag, all three are run.
-- Bandit produces no findings on a TypeScript target — that's expected.
+- Bandit produces no findings on a TypeScript target; that is expected.
 - ESLint emits ~1300 `detect-object-injection` warnings on Juice Shop's
   minified vendor bundles; the deduplicator collapses these into a handful.
