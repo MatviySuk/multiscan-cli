@@ -130,6 +130,7 @@ python multiscan.py --target ./juice-shop --output results.json
 # Pass that number as the second argument to metrics.py:
 python evaluation/metrics.py results.json 1358
 ```
+The evaluation report PDF file can be accessed here: [Evaluation report](Evaluation%20report.pdf)
 
 `metrics.py` reports both an exact-CWE match score and a CWE-family score
 (so a Semgrep CWE-1104 detection on a ground-truth CWE-94 entry still counts
